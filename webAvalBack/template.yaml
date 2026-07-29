@@ -9,11 +9,13 @@ Globals:
     MemorySize: 256
     Architectures:
       - x86_64
-    Environment:
-      Variables:
-        BASE_URL: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
-        
+
 Resources:
+
+  ApiGatewayAprobaciones:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
 
   TablaSolicitudes:
     Type: AWS::DynamoDB::Table
@@ -105,6 +107,27 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
+  FuncionApprove:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/approve.resolver
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaSolicitudes
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaAprobadores
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaOtps
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaMockMails
+      Events:
+        ApiApprove:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/approve
+            Method: get
+
   FuncionHealth:
     Type: AWS::Serverless::Function
     Properties:
@@ -113,8 +136,64 @@ Resources:
         ApiHealth:
           Type: Api
           Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
             Path: /api/v1/health
             Method: get
+
+  FuncionCrearSolicitud:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/solicitudes.crear
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaSolicitudes
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaAprobadores
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaMockMails
+      Events:
+        ApiCrearSolicitud:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/solicitudes
+            Method: post
+
+  FuncionMockMail:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/mockMail.listar
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaMockMails
+      Events:
+        ApiMockMail:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/mock-mail
+            Method: get
+
+  FuncionOtpVerify:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/otp.verificar
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaSolicitudes
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaAprobadores
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaOtps
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaSessionTokens
+      Events:
+        ApiOtpVerify:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/otp/verify
+            Method: post
 
   TablaMockMails:
     Type: AWS::DynamoDB::Table
@@ -131,7 +210,7 @@ Resources:
 Outputs:
   ApiUrl:
     Description: URL base de la API desplegada
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+    Value: !Sub "https://${ApiGatewayAprobaciones}.execute-api.${AWS::Region}.amazonaws.com/Prod"
   HealthCheckUrl:
     Description: URL del health check
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/v1/health"
+    Value: !Sub "https://${ApiGatewayAprobaciones}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/v1/health"
