@@ -1,1 +1,23 @@
-.vscode
+# Dependencias
+node_modules/
+
+# Build y artefactos de SAM
+.aws-sam/
+dist/
+build/
+
+# Variables de entorno y secretos
+.env
+.env.*
+env.json
+samconfig.toml
+
+# Editor / SO
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs y cobertura de tests
+*.log
+npm-debug.log*
+coverage/
