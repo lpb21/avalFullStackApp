@@ -1,9 +1,11 @@
 const { randomUUID } = require("crypto");
 const transaccionesRepo = require("../infrastructure/repositories/transaccionesRepository");
+const mockMailsRepo = require("../infrastructure/repositories/mockMailsRepository");
+const { construirCorreoAprobacion } = require("../domain/mailer");
 const { validarDatosSolicitud } = require("../domain/validacionSolicitud");
 const { ESTADOS_SOLICITUD, ESTADOS_APROBADOR } = require("../domain/maquinaEstados");
 
-async function crearSolicitud(input) {
+async function crearSolicitud(input, contexto = {}) {
   const { valido, errores } = validarDatosSolicitud(input);
   if (!valido) {
     return { ok: false, errores };
@@ -39,6 +41,13 @@ async function crearSolicitud(input) {
   }));
 
   await transaccionesRepo.crearSolicitudConAprobadores(solicitud, aprobadores);
+
+  const baseUrl = contexto.baseUrl || process.env.BASE_URL || "http://localhost:3000";
+
+  for (const aprobador of aprobadores) {
+    const correo = construirCorreoAprobacion({ solicitud, aprobador, baseUrl });
+    await mockMailsRepo.guardarMockMail(correo);
+  }
 
   return {
     ok: true,

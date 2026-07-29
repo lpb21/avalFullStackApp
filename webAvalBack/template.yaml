@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Backend - Flujo de aprobaciones con firma digital (AVAL)
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 10
+    MemorySize: 256
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        BASE_URL: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+        
+Resources:
+
+  TablaSolicitudes:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Solicitudes
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: solicitud_id
+          AttributeType: S
+        - AttributeName: solicitante_email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: solicitud_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: gsi_solicitante_email
+          KeySchema:
+            - AttributeName: solicitante_email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  TablaAprobadores:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Aprobadores
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: solicitud_id
+          AttributeType: S
+        - AttributeName: orden
+          AttributeType: N
+        - AttributeName: token
+          AttributeType: S
+      KeySchema:
+        - AttributeName: solicitud_id
+          KeyType: HASH
+        - AttributeName: orden
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: gsi_token
+          KeySchema:
+            - AttributeName: token
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  TablaOtps:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: OTPs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: solicitud_id
+          AttributeType: S
+        - AttributeName: orden
+          AttributeType: N
+      KeySchema:
+        - AttributeName: solicitud_id
+          KeyType: HASH
+        - AttributeName: orden
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expira_en
+        Enabled: true
+
+  TablaSessionTokens:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SessionTokens
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: firma_token
+          AttributeType: S
+      KeySchema:
+        - AttributeName: firma_token
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expira_en
+        Enabled: true
+
+  BucketEvidencias:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "evidencias-aval-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  FuncionHealth:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/health.handler
+      Events:
+        ApiHealth:
+          Type: Api
+          Properties:
+            Path: /api/v1/health
+            Method: get
+
+  TablaMockMails:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MockMails
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: mail_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: mail_id
+          KeyType: HASH
+
+Outputs:
+  ApiUrl:
+    Description: URL base de la API desplegada
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  HealthCheckUrl:
+    Description: URL del health check
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/v1/health"
