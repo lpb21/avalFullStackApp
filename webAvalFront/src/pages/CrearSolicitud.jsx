@@ -87,8 +87,9 @@ function CrearSolicitud() {
 
       <form onSubmit={manejarEnvio}>
         <div style={{ marginBottom: "1rem" }}>
-          <label>Título</label>
+          <label htmlFor="titulo">Título</label>
           <input
+            id="titulo"
             type="text"
             value={form.titulo}
             onChange={(e) => actualizarCampo("titulo", e.target.value)}
@@ -98,8 +99,9 @@ function CrearSolicitud() {
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
-          <label>Descripción</label>
+          <label htmlFor="descripcion">Descripción</label>
           <textarea
+            id="descripcion"
             value={form.descripcion}
             onChange={(e) => actualizarCampo("descripcion", e.target.value)}
             required
@@ -108,8 +110,9 @@ function CrearSolicitud() {
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
-          <label>Monto</label>
+          <label htmlFor="monto">Monto</label>
           <input
+            id="monto"
             type="number"
             min="1"
             value={form.monto}
@@ -120,8 +123,9 @@ function CrearSolicitud() {
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
-          <label>Tu nombre (solicitante)</label>
+          <label htmlFor="solicitante_nombre">Tu nombre (solicitante)</label>
           <input
+            id="solicitante_nombre"
             type="text"
             value={form.solicitante_nombre}
             onChange={(e) => actualizarCampo("solicitante_nombre", e.target.value)}
@@ -131,8 +135,9 @@ function CrearSolicitud() {
         </div>
 
         <div style={{ marginBottom: "1.5rem" }}>
-          <label>Tu email (solicitante)</label>
+          <label htmlFor="solicitante_email">Tu email (solicitante)</label>
           <input
+            id="solicitante_email"
             type="email"
             value={form.solicitante_email}
             onChange={(e) => actualizarCampo("solicitante_email", e.target.value)}

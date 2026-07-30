@@ -4,8 +4,35 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "webpack serve",
-    "build": "webpack"
+  "start": "webpack serve",
+  "build": "webpack",
+  "test": "jest",
+  "test:coverage": "jest --coverage"
+  },
+  "jest": {
+  "testEnvironment": "jsdom",
+  "setupFiles": ["<rootDir>/jest.setup.js"],
+  "setupFilesAfterEnv": ["@testing-library/jest-dom"],
+  "moduleNameMapper": {
+    "\\.(css|less|scss)$": "identity-obj-proxy"
+  },
+  "transform": {
+    "^.+\\.(js|jsx)$": "babel-jest"
+  },
+  "testPathIgnorePatterns": ["/node_modules/", "/dist/"],
+  "collectCoverageFrom": [
+    "src/**/*.{js,jsx}",
+    "!src/index.js",
+    "!src/bootstrap.js"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 60,
+      "functions": 60,
+      "lines": 60,
+      "statements": 60
+      }
+    }
   },
   "keywords": [],
   "author": "",
@@ -21,9 +48,15 @@
     "@babel/core": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "babel-jest": "^30.4.1",
     "babel-loader": "^9.2.1",
     "css-loader": "^7.1.4",
     "html-webpack-plugin": "^5.6.8",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "style-loader": "^4.0.0",
     "webpack": "^5.109.2",
     "webpack-cli": "^7.2.2",
