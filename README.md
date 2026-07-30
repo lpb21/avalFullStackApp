@@ -52,6 +52,61 @@ Un solicitante crea una solicitud de compra (título, descripción, monto) y eli
  
 ---
  
+## 📸 Capturas de pantalla
+ 
+**Crear solicitud**
+![Formulario de creación de solicitud](./capturas/01-crear-solicitud.png)
+ 
+**Solicitud creada**
+![Confirmación de solicitud creada](./capturas/02-solicitud-creada.png)
+ 
+**Vista del aprobador 1 — formulario**
+![Pantalla inicial del primer aprobador](./capturas/03-aprobador-1-form.png)
+ 
+**Vista del aprobador 1 — código OTP**
+![Ingreso de código OTP del primer aprobador](./capturas/04-aprobador-1-codigo.png)
+ 
+**Vista del aprobador 1 — estado de la solicitud**
+![Detalle de la solicitud visto por el primer aprobador](./capturas/05-aprobador-1-estado-solicitud.png)
+ 
+**Vista del aprobador 1 — firma registrada**
+![Confirmación de firma registrada del primer aprobador](./capturas/06-aprobador-1-firma-registrada.png)
+ 
+**Vista del aprobador 2 — formulario**
+![Pantalla inicial del segundo aprobador](./capturas/07-aprobador-2-form.png)
+ 
+**Vista del aprobador 2 — código OTP**
+![Ingreso de código OTP del segundo aprobador](./capturas/08-aprobador-2-codigo.png)
+ 
+**Vista del aprobador 2 — estado de la solicitud**
+![Detalle de la solicitud visto por el segundo aprobador](./capturas/09-aprobador-2-estado-solicitud.png)
+ 
+**Vista del aprobador 2 — firma registrada**
+![Confirmación de firma registrada del segundo aprobador](./capturas/10-aprobador-2-firma-registrada.png)
+ 
+**Vista del aprobador 3 — código OTP**
+![Ingreso de código OTP del tercer aprobador](./capturas/11-aprobador-3-codigo.png)
+ 
+**Vista del aprobador 3 — estado de la solicitud**
+![Detalle de la solicitud visto por el tercer aprobador](./capturas/12-aprobador-3-estado-solicitud.png)
+ 
+**Vista del aprobador 3 — firma registrada (solicitud completada)**
+![Confirmación de firma registrada del tercer aprobador, con la solicitud ya completada](./capturas/13-aprobador-3-firma-registrada-COMPLETADA.png)
+ 
+**Panel del solicitante**
+![Panel del solicitante](./capturas/14-panel-solicitante.png)
+ 
+**Consulta en el panel del solicitante**
+![Búsqueda de solicitudes en el panel](./capturas/15-consulta-panel-solicitante.png)
+ 
+**Detalle desde el panel del solicitante**
+![Detalle de la solicitud completada, con el botón de descarga de PDF](./capturas/16-detalle-panel-solicitante.png)
+ 
+**PDF de evidencia generado**
+![PDF de evidencia con las 3 firmas y sus hashes encadenados](./capturas/17-pdf-de-solicitud.png)
+ 
+---
+ 
 ## 📖 Dónde seguir leyendo
  
 - **[`webAvalBack/README.md`](./webAvalBack/README.md)** — la documentación completa del backend: los 9 endpoints, el modelo de datos, cómo se implementó la firma concatenada, las decisiones de seguridad, cómo correr los tests, y los problemas reales que se fueron encontrando y corrigiendo por el camino.
