@@ -236,6 +236,40 @@ Resources:
             Path: /api/v1/solicitudes/{solicitud_id}/evidencia.pdf
             Method: get
 
+  FuncionListarSolicitudes:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/solicitudes.listar
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaSolicitudes
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaAprobadores
+      Events:
+        ApiListarSolicitudes:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/solicitudes
+            Method: get
+
+  FuncionDetalleSolicitud:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/detalleSolicitud.obtener
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaSolicitudes
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaAprobadores
+      Events:
+        ApiDetalleSolicitud:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/solicitudes/{solicitud_id}
+            Method: get
+
   TablaMockMails:
     Type: AWS::DynamoDB::Table
     Properties:

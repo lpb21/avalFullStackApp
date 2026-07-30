@@ -1,7 +1,8 @@
-const { PutCommand, GetCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, UpdateCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
 const { docClient } = require("../dynamoClient");
 
 const TABLE_NAME = "Solicitudes";
+const GSI_SOLICITANTE_EMAIL = "gsi_solicitante_email";
 
 /**
  * Crea una nueva solicitud en estado PENDIENTE.
@@ -67,8 +68,28 @@ async function actualizarEstadoConPdf({ solicitudId, estadoEsperado, nuevoEstado
   );
 }
 
+
+/**
+ * Lista las solicitudes de un solicitante, vía el GSI de su email
+ * (evita un Scan completo de la tabla).
+ */
+async function listarPorSolicitante(solicitanteEmail) {
+  const resultado = await docClient.send(
+    new QueryCommand({
+      TableName: TABLE_NAME,
+      IndexName: GSI_SOLICITANTE_EMAIL,
+      KeyConditionExpression: "solicitante_email = :email",
+      ExpressionAttributeValues: {
+        ":email": solicitanteEmail,
+      },
+    })
+  );
+  return resultado.Items || [];
+}
+
 module.exports = { 
     crearSolicitud, 
     obtenerSolicitudPorId, 
     actualizarEstado, 
-    actualizarEstadoConPdf };
+    actualizarEstadoConPdf,
+    listarPorSolicitante };
