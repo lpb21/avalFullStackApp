@@ -1,9 +1,5 @@
 const { firmarSolicitud } = require("../application/firmarSolicitud");
-
-const HEADERS_CORS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-};
+const { respuestaJson } = require("./httpHelper");
 
 function obtenerFirmaToken(event) {
   const headers = event.headers || {};
@@ -18,43 +14,26 @@ exports.firmar = async (event) => {
     const firmaToken = obtenerFirmaToken(event);
 
     if (!firmaToken) {
-      return {
-        statusCode: 401,
-        headers: HEADERS_CORS,
-        body: JSON.stringify({
-          codigo: "TOKEN_INVALIDO",
-          mensaje: "Falta el token de firma (header X-Firma-Token)",
-        }),
-      };
+      return respuestaJson(401, {
+        codigo: "TOKEN_INVALIDO",
+        mensaje: "Falta el token de firma (header X-Firma-Token)",
+      });
     }
 
     const input = JSON.parse(event.body || "{}");
     const accion = input.accion;
 
     if (accion !== "APROBAR" && accion !== "RECHAZAR") {
-      return {
-        statusCode: 400,
-        headers: HEADERS_CORS,
-        body: JSON.stringify({
-          codigo: "ACCION_INVALIDA",
-          mensaje: "El campo 'accion' debe ser APROBAR o RECHAZAR",
-        }),
-      };
+      return respuestaJson(400, {
+        codigo: "ACCION_INVALIDA",
+        mensaje: "El campo 'accion' debe ser APROBAR o RECHAZAR",
+      });
     }
 
     const resultado = await firmarSolicitud({ solicitudId, orden, firmaToken, accion });
-
-    return {
-      statusCode: resultado.status,
-      headers: HEADERS_CORS,
-      body: JSON.stringify(resultado.body),
-    };
+    return respuestaJson(resultado.status, resultado.body);
   } catch (error) {
     console.error("Error en firmarSolicitud handler:", error);
-    return {
-      statusCode: 500,
-      headers: HEADERS_CORS,
-      body: JSON.stringify({ codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" }),
-    };
+    return respuestaJson(500, { codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" });
   }
 };
