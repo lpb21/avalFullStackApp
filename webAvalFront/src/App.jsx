@@ -1,6 +1,8 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import CrearSolicitud from "./pages/CrearSolicitud";
+import PanelSolicitante from "./pages/PanelSolicitante";
+import DetalleSolicitud from "./pages/DetalleSolicitud";
 
 const AppRemoto = lazy(() => import("aprobador/App"));
 
@@ -33,7 +35,8 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<CrearSolicitud />} />
-          <Route path="/panel" element={<p style={{ padding: "2rem" }}>Panel del solicitante (próximamente)</p>} />
+          <Route path="/panel" element={<PanelSolicitante />} />
+          <Route path="/solicitudes/:id" element={<DetalleSolicitud />} />
           <Route path="/prueba-remote" element={<PruebaRemote />} />
         </Routes>
       </Layout>
