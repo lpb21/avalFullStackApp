@@ -1,10 +1,6 @@
 const { crearSolicitud } = require("../application/crearSolicitud");
 const { listarSolicitudes } = require("../application/listarSolicitudes");
-
-const HEADERS_CORS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-};
+const { respuestaJson } = require("./httpHelper");
 
 function obtenerBaseUrl(event) {
   const host = event.headers && (event.headers.Host || event.headers.host);
@@ -22,36 +18,23 @@ exports.crear = async (event) => {
     const resultado = await crearSolicitud(input, { baseUrl });
 
     if (!resultado.ok) {
-      return {
-        statusCode: 400,
-        headers: HEADERS_CORS,
-        body: JSON.stringify({
-          codigo: "VALIDACION_FALLIDA",
-          mensaje: "Datos inválidos",
-          errores: resultado.errores,
-        }),
-      };
+      return respuestaJson(400, {
+        codigo: "VALIDACION_FALLIDA",
+        mensaje: "Datos inválidos",
+        errores: resultado.errores,
+      });
     }
 
-    return {
-      statusCode: 201,
-      headers: HEADERS_CORS,
-      body: JSON.stringify({
-        solicitud_id: resultado.solicitud.solicitud_id,
-        estado: resultado.solicitud.estado,
-        mensaje: "Solicitud creada. Se enviaron los links a los aprobadores.",
-      }),
-    };
+    return respuestaJson(201, {
+      solicitud_id: resultado.solicitud.solicitud_id,
+      estado: resultado.solicitud.estado,
+      mensaje: "Solicitud creada. Se enviaron los links a los aprobadores.",
+    });
   } catch (error) {
     console.error("Error en crearSolicitud handler:", error);
-    return {
-      statusCode: 500,
-      headers: HEADERS_CORS,
-      body: JSON.stringify({ codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" }),
-    };
+    return respuestaJson(500, { codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" });
   }
 };
-
 
 exports.listar = async (event) => {
   try {
@@ -59,29 +42,16 @@ exports.listar = async (event) => {
     const solicitanteEmail = params.solicitante_email;
 
     if (!solicitanteEmail) {
-      return {
-        statusCode: 400,
-        headers: HEADERS_CORS,
-        body: JSON.stringify({
-          codigo: "PARAMETROS_FALTANTES",
-          mensaje: "Se requiere el parámetro solicitante_email",
-        }),
-      };
+      return respuestaJson(400, {
+        codigo: "PARAMETROS_FALTANTES",
+        mensaje: "Se requiere el parámetro solicitante_email",
+      });
     }
 
     const resultado = await listarSolicitudes(solicitanteEmail);
-
-    return {
-      statusCode: resultado.status,
-      headers: HEADERS_CORS,
-      body: JSON.stringify(resultado.body),
-    };
+    return respuestaJson(resultado.status, resultado.body);
   } catch (error) {
     console.error("Error en listarSolicitudes handler:", error);
-    return {
-      statusCode: 500,
-      headers: HEADERS_CORS,
-      body: JSON.stringify({ codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" }),
-    };
+    return respuestaJson(500, { codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" });
   }
 };

@@ -1,9 +1,5 @@
 const { verificarOtp } = require("../application/verificarOtp");
-
-const HEADERS_CORS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-};
+const { respuestaJson } = require("./httpHelper");
 
 exports.verificar = async (event) => {
   try {
@@ -11,14 +7,10 @@ exports.verificar = async (event) => {
     const { solicitud_id, orden, approver_token, codigo } = input;
 
     if (!solicitud_id || orden === undefined || !approver_token || !codigo) {
-      return {
-        statusCode: 400,
-        headers: HEADERS_CORS,
-        body: JSON.stringify({
-          codigo: "PARAMETROS_FALTANTES",
-          mensaje: "Se requieren solicitud_id, orden, approver_token y codigo",
-        }),
-      };
+      return respuestaJson(400, {
+        codigo: "PARAMETROS_FALTANTES",
+        mensaje: "Se requieren solicitud_id, orden, approver_token y codigo",
+      });
     }
 
     const resultado = await verificarOtp({
@@ -28,17 +20,9 @@ exports.verificar = async (event) => {
       codigo,
     });
 
-    return {
-      statusCode: resultado.status,
-      headers: HEADERS_CORS,
-      body: JSON.stringify(resultado.body),
-    };
+    return respuestaJson(resultado.status, resultado.body);
   } catch (error) {
     console.error("Error en verificarOtp handler:", error);
-    return {
-      statusCode: 500,
-      headers: HEADERS_CORS,
-      body: JSON.stringify({ codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" }),
-    };
+    return respuestaJson(500, { codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" });
   }
 };
