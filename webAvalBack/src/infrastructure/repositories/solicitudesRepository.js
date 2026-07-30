@@ -51,4 +51,24 @@ async function actualizarEstado({ solicitudId, estadoEsperado, nuevoEstado }) {
   );
 }
 
-module.exports = { crearSolicitud, obtenerSolicitudPorId, actualizarEstado };
+async function actualizarEstadoConPdf({ solicitudId, estadoEsperado, nuevoEstado, pdfKey }) {
+  await docClient.send(
+    new UpdateCommand({
+      TableName: TABLE_NAME,
+      Key: { solicitud_id: solicitudId },
+      UpdateExpression: "SET estado = :nuevo, pdf_key = :pdfKey",
+      ConditionExpression: "estado = :esperado",
+      ExpressionAttributeValues: {
+        ":nuevo": nuevoEstado,
+        ":esperado": estadoEsperado,
+        ":pdfKey": pdfKey,
+      },
+    })
+  );
+}
+
+module.exports = { 
+    crearSolicitud, 
+    obtenerSolicitudPorId, 
+    actualizarEstado, 
+    actualizarEstadoConPdf };

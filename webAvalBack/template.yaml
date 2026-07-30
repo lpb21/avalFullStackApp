@@ -9,6 +9,9 @@ Globals:
     MemorySize: 256
     Architectures:
       - x86_64
+    Environment:
+      Variables:
+        BUCKET_EVIDENCIAS: !Ref BucketEvidencias
 
 Resources:
 
@@ -194,6 +197,44 @@ Resources:
             RestApiId: !Ref ApiGatewayAprobaciones
             Path: /api/v1/otp/verify
             Method: post
+
+  FuncionFirmar:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/firmar.firmar
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaSolicitudes
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaAprobadores
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TablaSessionTokens
+        - S3CrudPolicy:
+            BucketName: !Ref BucketEvidencias
+      Events:
+        ApiFirmar:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/solicitudes/{solicitud_id}/aprobadores/{orden}/firmar
+            Method: post
+
+  FuncionEvidencia:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/evidencia.descargar
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaSolicitudes
+        - S3ReadPolicy:
+            BucketName: !Ref BucketEvidencias
+      Events:
+        ApiEvidencia:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayAprobaciones
+            Path: /api/v1/solicitudes/{solicitud_id}/evidencia.pdf
+            Method: get
 
   TablaMockMails:
     Type: AWS::DynamoDB::Table

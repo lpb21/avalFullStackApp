@@ -1,18 +1,12 @@
 const solicitudesRepo = require("../infrastructure/repositories/solicitudesRepository");
 const aprobadoresRepo = require("../infrastructure/repositories/aprobadoresRepository");
 const sessionTokensRepo = require("../infrastructure/repositories/sessionTokensRepository");
+const pdfStorageRepo = require("../infrastructure/repositories/pdfStorageRepository");
+const { generarPdfEvidencia } = require("../infrastructure/pdfGenerator");
 const { validarTurno, calcularEstadoSolicitud, ESTADOS_SOLICITUD, ESTADOS_APROBADOR } = require("../domain/maquinaEstados");
 const { calcularHashGenesis, calcularHashFirma } = require("../domain/hashChain");
 
-/**
- * Caso de uso de POST /firmar: valida el firma_token de un solo uso,
- * valida turno, y registra APROBAR (con hash encadenado) o RECHAZAR.
- * Si con esta firma se completan las 3, pasa la solicitud a
- * FIRMAS_COMPLETAS (la generación del PDF y el paso a COMPLETADA se
- * agregan en el siguiente módulo, aún no construido).
- */
 async function firmarSolicitud({ solicitudId, orden, firmaToken, accion }) {
-  // 1. Validar el firma_token
   const token = await sessionTokensRepo.obtenerFirmaToken(firmaToken);
   const ahoraSegundos = Math.floor(Date.now() / 1000);
 
@@ -41,19 +35,15 @@ async function firmarSolicitud({ solicitudId, orden, firmaToken, accion }) {
 
   const aprobadores = await aprobadoresRepo.listarAprobadoresPorSolicitud(solicitudId);
 
-  // 2. Validar turno (mismas reglas que /approve y /otp/verify)
   const validacion = validarTurno(solicitud, aprobadores, orden);
   if (!validacion.permitido) {
     const status = validacion.error === "YA_FIRMADO" ? 409 : 403;
     return { ok: false, status, body: { codigo: validacion.error, mensaje: validacion.mensaje } };
   }
 
-  // 3. Consumir el firma_token (un solo uso, condicional)
   try {
     await sessionTokensRepo.marcarFirmaTokenComoUsado(firmaToken);
   } catch (error) {
-    // ConditionalCheckFailedException: alguien más lo consumió en la
-    // misma fracción de segundo (carrera). Se trata como token inválido.
     return {
       ok: false,
       status: 401,
@@ -64,7 +54,6 @@ async function firmarSolicitud({ solicitudId, orden, firmaToken, accion }) {
   const aprobadorActual = aprobadores.find((a) => a.orden === orden);
   const fechaFirma = Date.now();
 
-  // 4. RECHAZAR: corta aquí, la solicitud pasa a RECHAZADA
   if (accion === "RECHAZAR") {
     try {
       await aprobadoresRepo.actualizarEstadoFirma({
@@ -95,7 +84,6 @@ async function firmarSolicitud({ solicitudId, orden, firmaToken, accion }) {
     };
   }
 
-  // 5. APROBAR: calcular el hash encadenado
   const aprobadorAnterior = aprobadores.find((a) => a.orden === orden - 1);
   const hashAnterior = aprobadorAnterior
     ? aprobadorAnterior.hash_firma
@@ -124,9 +112,8 @@ async function firmarSolicitud({ solicitudId, orden, firmaToken, accion }) {
     };
   }
 
-  // 6. Revisar si se completaron las 3 firmas
   const aprobadoresActualizados = aprobadores.map((a) =>
-    a.orden === orden ? { ...a, estado_firma: ESTADOS_APROBADOR.FIRMADO } : a
+    a.orden === orden ? { ...a, estado_firma: ESTADOS_APROBADOR.FIRMADO, fecha_firma: fechaFirma, hash_firma: hashFirma } : a
   );
   const nuevoEstadoSolicitud = calcularEstadoSolicitud(aprobadoresActualizados);
 
@@ -136,18 +123,43 @@ async function firmarSolicitud({ solicitudId, orden, firmaToken, accion }) {
       estadoEsperado: ESTADOS_SOLICITUD.PENDIENTE,
       nuevoEstado: ESTADOS_SOLICITUD.FIRMAS_COMPLETAS,
     });
-    // TODO: aquí se dispara la generación del PDF (siguiente módulo) y,
-    // si tiene éxito, la transición final a COMPLETADA.
+
+    // Generar PDF, subir a S3, y solo si tiene éxito pasar a COMPLETADA.
+    // Si algo falla aquí, la solicitud queda en FIRMAS_COMPLETAS (nunca
+    // COMPLETADA sin pdf_key) y puede reintentarse más adelante.
+    try {
+      const bytesPdf = await generarPdfEvidencia({
+        solicitud,
+        aprobadores: aprobadoresActualizados,
+      });
+      const pdfKey = await pdfStorageRepo.subirPdf({ solicitudId, bytesPdf });
+
+      await solicitudesRepo.actualizarEstadoConPdf({
+        solicitudId,
+        estadoEsperado: ESTADOS_SOLICITUD.FIRMAS_COMPLETAS,
+        nuevoEstado: ESTADOS_SOLICITUD.COMPLETADA,
+        pdfKey,
+      });
+
+      return {
+        ok: true,
+        status: 200,
+        body: { mensaje: "Firma registrada. Solicitud completada, PDF generado.", estado: ESTADOS_APROBADOR.FIRMADO, solicitud_estado: ESTADOS_SOLICITUD.COMPLETADA },
+      };
+    } catch (error) {
+      console.error("Error generando/subiendo PDF:", error);
+      return {
+        ok: true,
+        status: 200,
+        body: { mensaje: "Firma registrada. La generación del PDF está pendiente.", estado: ESTADOS_APROBADOR.FIRMADO, solicitud_estado: ESTADOS_SOLICITUD.FIRMAS_COMPLETAS },
+      };
+    }
   }
 
   return {
     ok: true,
     status: 200,
-    body: {
-      mensaje: "Firma registrada",
-      estado: ESTADOS_APROBADOR.FIRMADO,
-      solicitud_estado: nuevoEstadoSolicitud,
-    },
+    body: { mensaje: "Firma registrada", estado: ESTADOS_APROBADOR.FIRMADO, solicitud_estado: nuevoEstadoSolicitud },
   };
 }
 
