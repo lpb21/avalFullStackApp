@@ -7,8 +7,32 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch"
   },
+  "jest": {
+  "testEnvironment": "node",
+  "testPathIgnorePatterns": [
+    "/node_modules/",
+    "/.aws-sam/"
+  ],
+  "modulePathIgnorePatterns": [
+    "<rootDir>/.aws-sam/"
+  ],
+  "collectCoverageFrom": [
+    "src/**/*.js",
+    "!src/handlers/**/*.js"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 60,
+      "functions": 60,
+      "lines": 60,
+      "statements": 60
+    }
+  }
+},
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.1097.0",
     "@aws-sdk/client-s3": "^3.1097.0",
