@@ -47,7 +47,10 @@ async function buscarAprobadorPorToken(token) {
     new QueryCommand({
       TableName: TABLE_NAME,
       IndexName: GSI_TOKEN,
-      KeyConditionExpression: "token = :t",
+      KeyConditionExpression: "#tok = :t",
+      ExpressionAttributeNames: {
+        "#tok": "token",
+      },
       ExpressionAttributeValues: {
         ":t": token,
       },
