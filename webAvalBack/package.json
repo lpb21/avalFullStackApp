@@ -12,27 +12,27 @@
     "test:watch": "jest --watch"
   },
   "jest": {
-  "testEnvironment": "node",
-  "testPathIgnorePatterns": [
-    "/node_modules/",
-    "/.aws-sam/"
-  ],
-  "modulePathIgnorePatterns": [
-    "<rootDir>/.aws-sam/"
-  ],
-  "collectCoverageFrom": [
-    "src/**/*.js",
-    "!src/handlers/**/*.js"
-  ],
-  "coverageThreshold": {
-    "global": {
-      "branches": 60,
-      "functions": 60,
-      "lines": 60,
-      "statements": 60
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/.aws-sam/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.aws-sam/"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/handlers/**/*.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 60,
+        "functions": 60,
+        "lines": 60,
+        "statements": 60
+      }
     }
-  }
-},
+  },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.1097.0",
     "@aws-sdk/client-s3": "^3.1097.0",
@@ -46,7 +46,6 @@
     "prettier": "^3.9.6"
   },
   "dependencies": {
-    "pdf-lib": "^1.17.1",
-    "uuid": "^14.0.1"
+    "pdf-lib": "^1.17.1"
   }
 }

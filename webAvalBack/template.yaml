@@ -19,6 +19,10 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Firma-Token'"
+        AllowOrigin: "'*'"
 
   TablaSolicitudes:
     Type: AWS::DynamoDB::Table
