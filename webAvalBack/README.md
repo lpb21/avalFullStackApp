@@ -21,7 +21,7 @@ Backend serverless (AWS Lambda + API Gateway + DynamoDB + S3) para la Prueba Té
  
 ## 🏗️ Arquitectura
  
-Arquitectura por capas con **dominio aislado de AWS** (no es hexagonal estricta completamente, fue una decisión propia por simplicidad y tiempo, manteniendo el principio de separación de responsabilidades que pide el enunciado):
+Arquitectura por capas con **dominio aislado de AWS** (no es hexagonal estricta, es una decisión propia por simplicidad, manteniendo el principio de separación de responsabilidades que pide el enunciado):
  
 ```
 src/
@@ -100,7 +100,7 @@ src/
  
 | Área | Tecnología | Justificación |
 |---|---|---|
-| Runtime | Node.js 22.x (JavaScript puro) | AWS Lambda no ofrece runtime de Node 24 aún; JavaScript vanilla por eficiencia de tiempo |
+| Runtime | Node.js 22.x (JavaScript puro) | AWS Lambda no ofrece runtime de Node 24 aún; JS puro por eficiencia de tiempo |
 | IaC / Despliegue | AWS SAM | Nativo AWS, `sam local` permite probar Lambdas sin desplegar, ciclo build/deploy reproducible |
 | Base de datos | DynamoDB (multi-tabla) | Ver justificación detallada en [Supuestos](#-supuestos-y-decisiones-de-arquitectura) |
 | Almacenamiento de PDFs | S3 (bucket privado) | Acceso exclusivamente vía URL prefirmada, nunca público |
@@ -118,7 +118,7 @@ src/
 - **Docker** (para `sam build --use-container` y `sam local`)
 - **AWS SAM CLI** ([instalación](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html))
 - **AWS CLI** configurado con un usuario IAM (`aws configure`) con permisos para crear Lambda, DynamoDB, S3, API Gateway, IAM Roles y CloudFormation
-> **Nota de entorno:** este proyecto se desarrolló en WSL2/Ubuntu, no en Windows nativo. RecomiendO mucho el mismo entorno para evitar incompatibilidades de binarios nativos (p. ej. `esbuild` instala un binario específico por plataforma).
+> **Nota de entorno:** este proyecto se desarrolló en WSL2/Ubuntu, no en Windows nativo. Se recomienda el mismo entorno para evitar incompatibilidades de binarios nativos (p. ej. `esbuild` instala un binario específico por plataforma).
  
 ### Instalación de dependencias
  
@@ -157,7 +157,7 @@ curl http://127.0.0.1:3000/api/v1/health
  
 ## 📝 Documentación de la API
  
-El contrato completo está en **`fase1.yaml`** (OpenAPI 3.0), incluyendo request/response schemas, códigos de error y el security scheme del header `X-Firma-Token`. Se puede visualizar en [Swagger Editor](https://editor.swagger.io/) pegando el contenido del archivo.
+El contrato completo está en **`openapi.yaml`** (OpenAPI 3.0), incluyendo request/response schemas, códigos de error y el security scheme del header `X-Firma-Token`. Se puede visualizar en [Swagger Editor](https://editor.swagger.io/) pegando el contenido del archivo.
  
 ### Endpoints (prefijo `/api/v1`)
  
@@ -179,7 +179,7 @@ El contrato completo está en **`fase1.yaml`** (OpenAPI 3.0), incluyendo request
  
 ### 1. Modelo DynamoDB: Multi-tabla
  
-**Justificación:** siendo mi primer proyecto con DynamoDB, me decidi por tener un esquema de multi-tabla por claridad y menor curva de aprendizaje. Los patrones de acceso son simples y directos (`GetItem` por PK, `Query` por PK+SK, lookup por GSI) — no hay accesos que requieran combinar entidades heterogéneas en una sola consulta, que es donde single-table design aporta más valor. Se documenta single-table como evolución para escala masiva (ver [Mejoras propuestas](#-mejoras-propuestas-no-implementadas)).
+**Justificación:** siendo el primer proyecto con DynamoDB, se optó por multi-tabla por claridad y menor curva de aprendizaje. Los patrones de acceso son simples y directos (`GetItem` por PK, `Query` por PK+SK, lookup por GSI) — no hay accesos que requieran combinar entidades heterogéneas en una sola consulta, que es donde single-table design aporta más valor. Se documenta single-table como evolución para escala masiva (ver [Mejoras propuestas](#-mejoras-propuestas-no-implementadas)).
  
 **Tablas:**
  
@@ -211,7 +211,7 @@ hash_firma_N = SHA256(datosSolicitud_canonico + hashAnterior + nombre_N + timest
 - **`firma_token` de un solo uso**: emitido por `/otp/verify`, requerido en el header `X-Firma-Token` para `/firmar`. Se invalida con `ConditionExpression: usado = false` (garantiza uso único incluso ante condiciones de carrera). Se eligió una tabla DynamoDB en vez de JWT stateless precisamente porque un token de un solo uso requiere invalidación explícita tras su consumo.
 - **TTL vs. validación real**: el TTL de DynamoDB en `OTPs` y `SessionTokens` es **solo limpieza automática** — el borrado por TTL no es inmediato (puede tardar minutos u horas). La validez real siempre se valida en código comparando `expira_en` (epoch en **segundos**) contra el tiempo actual.
 - **Límite de intentos vs. generaciones**: máx. 3 intentos fallidos por OTP; al regenerar un OTP, `intentos` se reinicia a 0 (tope efectivo: 9 intentos). El límite duro real es el de **generaciones** (máx. 3 por aprobador) — al agotarlas, el aprobador queda bloqueado (429), y ese es el límite anti-fuerza-bruta genuino.
-- **Deadlock resuelto**: un OTP con intentos agotados (`intentos >= 3`) se trata como "no vigente" y se regenera consumiendo una generación, en vez de bloquear al usuario legítimo con un código inservible durante 3 minutos. Ver `domain/otp.js::decidirAccionOtp`.
+- **Deadlock resuelto**: un OTP con intentos agotados (`intentos >= 3`) se trata como "no vigente" y se regenera consumiendo una generación, en vez de bloquear al usuario legítimo con un código inservible durante 3 minutos. La razón de fondo: si se reutilizara ese OTP agotado, el aprobador recibiría un `200` ("usa el OTP enviado") sobre un código que de todas formas devuelve `429` en cualquier intento — quedaría bloqueado sin explicación hasta que expirara el TTL. Al tratarlo como agotado, el único bloqueo real y explicable es el de las 3 generaciones. Ver `domain/otp.js::decidirAccionOtp`.
 ### 4. Máquina de estados
  
 ```
@@ -253,6 +253,7 @@ El enunciado premia argumentar mejoras en términos de escalabilidad, seguridad,
 - **Orquestación con Step Functions**: coordinar firma → generación de PDF → cierre con reintentos automáticos ante fallo, en vez del manejo de errores actual dentro del caso de uso.
 - **Desbloqueo de aprobador**: hoy, al agotar las 3 generaciones de OTP, el bloqueo es permanente (sin flujo de desbloqueo). Se propone un mecanismo de reenvío por el solicitante o expiración temporal del bloqueo.
 - **Rate limiting / WAF en API Gateway**: proteger los endpoints públicos ante abuso.
+- **Vigencia del link de aprobación**: el `approver_token` es un UUID sin expiración — el link sigue siendo válido indefinidamente mientras la solicitud esté `PENDIENTE`. Se asume aceptable porque el acceso real está protegido por el OTP y por la validación de turno; como mejora se propone darle vigencia (por ejemplo, 7 días) con reenvío bajo demanda, para reducir la ventana de exposición si el correo llegara a filtrarse.
 - **Notificaciones reales**: reemplazar el mock-mail por Amazon SES u otro proveedor SMTP.
 - **Helper de respuestas ya extraído** (`httpHelper.js`): se refactorizó la duplicación original de `HEADERS_CORS` en cada handler hacia un módulo compartido — se documenta aquí porque fue una mejora aplicada durante el desarrollo, no parte del diseño original.
 ---
