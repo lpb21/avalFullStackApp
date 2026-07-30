@@ -2,8 +2,13 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { ModuleFederationPlugin } = require("webpack").container;
 
+const esProduccion = process.env.NODE_ENV === "production";
+const urlRemote = esProduccion
+  ? "aprobador@/aprobador/remoteEntry.js"
+  : "aprobador@http://localhost:3002/remoteEntry.js";
+
 module.exports = {
-  mode: "development",
+  mode: esProduccion ? "production" : "development",
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -43,7 +48,7 @@ module.exports = {
     new ModuleFederationPlugin({
       name: "shell",
       remotes: {
-        aprobador: "aprobador@http://localhost:3002/remoteEntry.js",
+        aprobador: urlRemote,
       },
       shared: {
         react: { singleton: true, requiredVersion: false },

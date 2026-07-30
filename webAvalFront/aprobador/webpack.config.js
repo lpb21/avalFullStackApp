@@ -2,13 +2,15 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { ModuleFederationPlugin } = require("webpack").container;
 
+const esProduccion = process.env.NODE_ENV === "production";
+
 module.exports = {
-  mode: "development",
+  mode: esProduccion ? "production" : "development",
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "[name].bundle.js",
-    publicPath: "auto",
+    publicPath: esProduccion ? "/aprobador/" : "auto",
     clean: true,
   },
   resolve: {
@@ -53,11 +55,11 @@ module.exports = {
     }),
   ],
   devServer: {
-  port: 3002,
-  historyApiFallback: true,
-  headers: {
-    "Access-Control-Allow-Origin": "*",
-    "Cross-Origin-Resource-Policy": "cross-origin",
+    port: 3002,
+    historyApiFallback: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cross-Origin-Resource-Policy": "cross-origin",
     },
-    },
+  },
 };
