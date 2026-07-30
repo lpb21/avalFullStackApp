@@ -1,21 +1,19 @@
 {
-  "name": "webavalfront",
+  "name": "aprobador",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "webpack serve",
-    "build": "webpack"
+  "start": "webpack serve",
+  "build": "webpack"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "axios": "^1.19.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
