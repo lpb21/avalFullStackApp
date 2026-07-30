@@ -1,4 +1,5 @@
 const { crearSolicitud } = require("../application/crearSolicitud");
+const { listarSolicitudes } = require("../application/listarSolicitudes");
 
 const HEADERS_CORS = {
   "Content-Type": "application/json",
@@ -43,6 +44,40 @@ exports.crear = async (event) => {
     };
   } catch (error) {
     console.error("Error en crearSolicitud handler:", error);
+    return {
+      statusCode: 500,
+      headers: HEADERS_CORS,
+      body: JSON.stringify({ codigo: "ERROR_INTERNO", mensaje: "Error interno del servidor" }),
+    };
+  }
+};
+
+
+exports.listar = async (event) => {
+  try {
+    const params = event.queryStringParameters || {};
+    const solicitanteEmail = params.solicitante_email;
+
+    if (!solicitanteEmail) {
+      return {
+        statusCode: 400,
+        headers: HEADERS_CORS,
+        body: JSON.stringify({
+          codigo: "PARAMETROS_FALTANTES",
+          mensaje: "Se requiere el parámetro solicitante_email",
+        }),
+      };
+    }
+
+    const resultado = await listarSolicitudes(solicitanteEmail);
+
+    return {
+      statusCode: resultado.status,
+      headers: HEADERS_CORS,
+      body: JSON.stringify(resultado.body),
+    };
+  } catch (error) {
+    console.error("Error en listarSolicitudes handler:", error);
     return {
       statusCode: 500,
       headers: HEADERS_CORS,
